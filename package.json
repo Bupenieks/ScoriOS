@@ -1,0 +1,23 @@
+{
+  "name": "scorios",
+  "version": "1.0.0",
+  "description": "An ios app with Node and Mongo backend to congregate movie scores and soundtracks.",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Bupenieks/Scorios.git"
+  },
+  "author": "Ben Upenieks",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Bupenieks/Scorios/issues"
+  },
+  "homepage": "https://github.com/Bupenieks/Scorios#readme",
+  "dependencies": {
+    "express": "^4.15.4",
+    "mongod": "^2.0.0"
+  }
+}
