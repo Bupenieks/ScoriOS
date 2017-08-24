@@ -4,10 +4,13 @@ const http = require('http'),
       express = require('express'),
       cheerio = require('cheerio'),
       path = require('path'),
-      request = require('request');
+      request = require('request'),
+    { URL } = require('url');
 
 const app = express(),
       server = http.Server(app);
+
+const IMDBUrl = 'http://www.imdb.com'
 
 app.set('port', process.env.PORT || 3000);
 app.use(express.static(path.join(__dirname, 'public')));
@@ -19,20 +22,24 @@ server.listen(app.get('port'), () => {
 
 const locateMoviePage = searchUrl => {
   return new Promise((resolve, reject) => {
-    request(searchUrl, (err, result, html) => {
+    request(searchUrl.toString(), (err, result, html) => {
       if (err) {
+        console.error(err);
         reject('Invalid movie name');
       } else {
         let $ = cheerio.load(html);
         let firstResult = $('div .article > .findSection > .findList > tbody')
           .children()
           .first();
-        let resultUrl = firstResult
+        let resultUrlSuffix = firstResult
           .children('.result_text')
           .children('a')
           .attr('href');
 
-        resolve(resultUrl);
+        let movieUrl = new URL(IMDBUrl + resultUrlSuffix);
+        movieUrl.search = '';
+        console.log(movieUrl)
+        resolve(movieUrl);
       }
     });
   });
@@ -40,31 +47,44 @@ const locateMoviePage = searchUrl => {
 
 const retrieveMovieData = movieUrl => {
   return new Promise((resolve, reject) => {
-    request(movieUrl, (err, res, html) => {
+    console.log(movieUrl.toString())
+    request(movieUrl.toString() + 'fullcredits', (err, res, html) => {
       if (err) {
         reject('Could not find movie');
       } else {
         let $ = cheerio.load(html);
+        let headerList = $('#fullcredits_content.header').children('.dataHeaderWithBorder');
+        console.log(headerList.length)
+        let composerHeader;
+        for (let i = 0; i < headerList.length; i++) {
+          console.log(headerList.html().toString())
+          if (headerList.html().includes("Music")) {
+              composerHeader = headerList;
+              break;
+          }
+          headerList = headerList.next()
+        };
 
-        let resultUrl = ''; //TODO
+          if (!composerHeader) {
+            reject("Could not locate composer");
+            return;
+          }
 
-        resolve(resultUrl);
+          let name = composerHeader.next().find('tbody > tr > td > a').val();
+
+        resolve(name);
       }
     });
   });
 };
 
 app.get('/request/', (req, res) => {
-  const urlPrefix = 'http://www.imdb.com/find?q=',
-        urlSuffix = '&s=tt&ttype=ft&ref_=fn_ft';
+  let movieUrl = new URL(IMDBUrl + '/find?q=' + req.query.movie + '&s=tt&ttype=ft&ref_=fn_ft');
 
-  let movie = req.query.movie;
-
-  locateMoviePage(urlPrefix + movie + urlSuffix)
+  locateMoviePage(movieUrl)
     .then(retrieveMovieData)
-    .catch(msg => {
-      res.status(400).send(msg);
-    });
+    .then(result => res.send(result))
+    .catch(msg => res.status(400).send(msg));
 });
 
 app.use((req, res) => {
