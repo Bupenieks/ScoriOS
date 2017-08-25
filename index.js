@@ -16,9 +16,12 @@ app.set('port', process.env.PORT || 3000);
 app.use(express.static(path.join(__dirname, 'public')));
 app.set('view engine', 'html');
 
+
+require('./app/routes')(app, {});
 server.listen(app.get('port'), () => {
   console.log('Express server listening on port ' + app.get('port'));
 });
+
 
 const locateMoviePage = searchUrl => {
   return new Promise((resolve, reject) => {
@@ -57,7 +60,7 @@ const retrieveMovieData = movieUrl => {
         console.log(headerList.length)
         let composerHeader;
         for (let i = 0; i < headerList.length; i++) {
-          console.log(headerList.html().toString())
+        //console.log(headerList.html().toString())
           if (headerList.html().includes("Music")) {
               composerHeader = headerList;
               break;
@@ -70,9 +73,10 @@ const retrieveMovieData = movieUrl => {
             return;
           }
 
-          let name = composerHeader.next().find('tbody > tr > td > a').val();
+          let name = composerHeader.next('.simpleTable').find('tbody > tr > td > a').html();
 
         resolve(name);
+        console.log((name))
       }
     });
   });
@@ -80,12 +84,14 @@ const retrieveMovieData = movieUrl => {
 
 app.get('/request/', (req, res) => {
   let movieUrl = new URL(IMDBUrl + '/find?q=' + req.query.movie + '&s=tt&ttype=ft&ref_=fn_ft');
+  let composer;
 
   locateMoviePage(movieUrl)
     .then(retrieveMovieData)
-    .then(result => res.send(result))
+    .then(retrieveSpotifyPlaylist)
     .catch(msg => res.status(400).send(msg));
 });
+
 
 app.use((req, res) => {
   res.status(404).send({ url: req.url });
