@@ -88,7 +88,7 @@ app.get('/request/', (req, res) => {
 
   locateMoviePage(movieUrl)
     .then(retrieveMovieData)
-    .then(retrieveSpotifyPlaylist)
+    .then(msg => res.send(msg))
     .catch(msg => res.status(400).send(msg));
 });
 
